@@ -736,7 +736,7 @@ class InsightFaceModel:
                 providers=['CUDAExecutionProvider', 'CPUExecutionProvider'],
                 root=os.path.join(models_path, "insightface"),
             )
-            self.model.prepare(ctx_id=0, det_size=(640, 640), det_thresh=0.3)
+            self.model.prepare(ctx_id=0, det_size=(640, 640), det_thresh=0.2)
 
     def run_model(self, img: np.ndarray, **kwargs) -> Tuple[torch.Tensor, bool]:
         self.load_model()
