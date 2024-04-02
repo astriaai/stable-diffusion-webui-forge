@@ -21,6 +21,7 @@ from secrets import compare_digest
 import modules.shared as shared
 from modules import sd_samplers, deepbooru, sd_hijack, images, scripts, ui, postprocessing, errors, restart, shared_items, script_callbacks, infotext_utils, sd_models
 from modules.api import models
+from modules.images import apply_exif_orientation
 from modules.shared import opts
 from modules.processing import StableDiffusionProcessingTxt2Img, StableDiffusionProcessingImg2Img, process_images
 from modules.textual_inversion.textual_inversion import create_embedding, train_embedding
@@ -88,7 +89,7 @@ def decode_base64_to_image(encoding):
         response = requests.get(encoding, timeout=30, headers=headers)
         try:
             image = Image.open(BytesIO(response.content))
-            image = images.apply_exif_orientation(image)
+            image = apply_exif_orientation(image)
             return image
         except Exception as e:
             raise HTTPException(status_code=500, detail="Invalid image url") from e
