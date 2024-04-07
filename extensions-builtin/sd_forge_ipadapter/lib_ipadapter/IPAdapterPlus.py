@@ -801,7 +801,7 @@ class IPAdapterApply:
                     set_model_patch_replace(work_model, patch_kwargs, ("middle", 0, index))
                     patch_kwargs["number"] += 1
             else: # InstantStyle
-                set_model_patch_replace(work_model, patch_kwargs, ("output", 0, 1)) # target_blocks=["up_blocks.0.attentions.1"]
+                set_model_patch_replace(work_model, patch_kwargs, ("output", 1, 1)) # target_blocks=["up_blocks.0.attentions.1"]
                 patch_kwargs["number"] += 1
 
         return (work_model, )
