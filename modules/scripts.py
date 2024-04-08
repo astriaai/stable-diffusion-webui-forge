@@ -833,8 +833,11 @@ class ScriptRunner:
             try:
                 script_args = p.script_args[script.args_from:script.args_to]
                 script.process_before_every_sampling(p, *script_args, **kwargs)
-            except Exception:
-                errors.report(f"Error running process_before_every_sampling: {script.filename}", exc_info=True)
+            except Exception as e:
+                if 'No face' in str(e):
+                    print ('Skipping script due to no face detected')
+                else:
+                    errors.report(f"Error running process_before_every_sampling: {script.filename}", exc_info=True)
 
     def postprocess(self, p, processed):
         for script in self.alwayson_scripts:
