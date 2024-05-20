@@ -17,6 +17,7 @@ class PreprocessorClipVisionForIPAdapter(PreprocessorClipVision):
         self.tags = ['IP-Adapter']
         self.model_filename_filters = ['IP-Adapter', 'IP_Adapter']
         self.sorting_priority = 20
+        self.slider_1 = PreprocessorParameter(label='Weight FaceIDV2', value=1.0, minimum=0.0, maximum=3, step=0.01, visible=True)
 
     def __call__(self, input_image, resolution, slider_1=None, slider_2=None, slider_3=None, **kwargs):
         cond = dict(
@@ -26,6 +27,7 @@ class PreprocessorClipVisionForIPAdapter(PreprocessorClipVision):
             noise=0.0,
             embeds=None,
             unfold_batch=False,
+            weight_v2=slider_1,
         )
         return cond
 
@@ -49,6 +51,7 @@ class PreprocessorClipVisionWithInsightFaceForIPAdapter(PreprocessorClipVisionFo
             noise=0.0,
             embeds=None,
             unfold_batch=False,
+            weight_v2=slider_1,
         )
         return cond
 
@@ -151,7 +154,8 @@ class IPAdapterPatcher(ControlModelPatcher):
             start_at=self.start_percent,
             end_at=self.end_percent,
             faceid_v2=self.faceid_v2,
-            weight_v2=self.weight_v2,
+            # weight_v2 is coming from `cond` now
+            # weight_v2=self.weight_v2,
             attn_mask=mask.squeeze(1) if mask is not None else None,
             **cond,
         )[0]

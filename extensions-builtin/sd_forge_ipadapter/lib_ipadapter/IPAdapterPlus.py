@@ -42,7 +42,7 @@ class FacePerceiverResampler(torch.nn.Module):
         ff_mult=4,
     ):
         super().__init__()
-        
+
         self.proj_in = torch.nn.Linear(embedding_dim, dim)
         self.proj_out = torch.nn.Linear(dim, output_dim)
         self.norm_out = torch.nn.LayerNorm(output_dim)
@@ -68,14 +68,14 @@ class FacePerceiverResampler(torch.nn.Module):
 class MLPProjModel(torch.nn.Module):
     def __init__(self, cross_attention_dim=1024, clip_embeddings_dim=1024):
         super().__init__()
-        
+
         self.proj = torch.nn.Sequential(
             torch.nn.Linear(clip_embeddings_dim, clip_embeddings_dim),
             torch.nn.GELU(),
             torch.nn.Linear(clip_embeddings_dim, cross_attention_dim),
             torch.nn.LayerNorm(cross_attention_dim)
         )
-        
+
     def forward(self, image_embeds):
         clip_extra_context_tokens = self.proj(image_embeds)
         return clip_extra_context_tokens
@@ -106,14 +106,14 @@ class ProjModelFaceIdPlus(torch.nn.Module):
 
         self.cross_attention_dim = cross_attention_dim
         self.num_tokens = num_tokens
-        
+
         self.proj = torch.nn.Sequential(
             torch.nn.Linear(id_embeddings_dim, id_embeddings_dim*2),
             torch.nn.GELU(),
             torch.nn.Linear(id_embeddings_dim*2, cross_attention_dim*num_tokens),
         )
         self.norm = torch.nn.LayerNorm(cross_attention_dim)
-        
+
         self.perceiver_resampler = FacePerceiverResampler(
             dim=cross_attention_dim,
             depth=4,
@@ -123,7 +123,7 @@ class ProjModelFaceIdPlus(torch.nn.Module):
             output_dim=cross_attention_dim,
             ff_mult=4,
         )
-        
+
     def forward(self, id_embeds, clip_embeds, scale=1.0, shortcut=False):
         x = self.proj(id_embeds)
         x = x.reshape(-1, self.num_tokens, self.cross_attention_dim)
@@ -136,12 +136,12 @@ class ProjModelFaceIdPlus(torch.nn.Module):
 class ImageProjModel(nn.Module):
     def __init__(self, cross_attention_dim=1024, clip_embeddings_dim=1024, clip_extra_context_tokens=4):
         super().__init__()
-        
+
         self.cross_attention_dim = cross_attention_dim
         self.clip_extra_context_tokens = clip_extra_context_tokens
         self.proj = nn.Linear(clip_embeddings_dim, self.clip_extra_context_tokens * cross_attention_dim)
         self.norm = nn.LayerNorm(cross_attention_dim)
-        
+
     def forward(self, image_embeds):
         embeds = image_embeds
         clip_extra_context_tokens = self.proj(embeds).reshape(-1, self.clip_extra_context_tokens, self.cross_attention_dim)
@@ -197,7 +197,7 @@ def min_(tensor_list):
     x = torch.stack(tensor_list)
     mn = x.min(axis=0)[0]
     return torch.clamp(mn, min=0)
-    
+
 def max_(tensor_list):
     # return the element-wise max of the tensor list.
     x = torch.stack(tensor_list)
@@ -217,18 +217,18 @@ def contrast_adaptive_sharpening(image, amount):
     g = img[..., 2:, :-2]
     h = img[..., 2:, 1:-1]
     i = img[..., 2:, 2:]
-    
+
     # Computing contrast
     cross = (b, d, e, f, h)
     mn = min_(cross)
     mx = max_(cross)
-    
+
     diag = (a, c, g, i)
     mn2 = min_(diag)
     mx2 = max_(diag)
     mx = mx + mx2
     mn = mn + mn2
-    
+
     # Computing local weight
     inv_mx = torch.reciprocal(mx)
     amp = inv_mx * torch.minimum(mn, (2 - mx))
@@ -372,7 +372,7 @@ class CrossAttentionPatch:
 
         self.k_key = str(self.number*2+1) + "_to_k_ip"
         self.v_key = str(self.number*2+1) + "_to_v_ip"
-    
+
     def set_new_condition(self, weight, ipadapter, number, cond, uncond, weight_type, mask=None, sigma_start=0.0, sigma_end=1.0, unfold_batch=False):
         self.weights.append(weight)
         self.ipadapters.append(ipadapter)
@@ -402,7 +402,7 @@ class CrossAttentionPatch:
         batch_prompt = b // len(cond_or_uncond)
         out = optimized_attention(q, k, v, extra_options["n_heads"])
         _, _, lh, lw = extra_options["original_shape"]
-        
+
         for weight, cond, uncond, ipadapter, mask, weight_type, sigma_start, sigma_end, unfold_batch in zip(self.weights, self.conds, self.unconds, self.ipadapters, self.masks, self.weight_type, self.sigma_start, self.sigma_end, self.unfold_batch):
             if sigma > sigma_start or sigma < sigma_end:
                 continue
@@ -502,7 +502,7 @@ class CrossAttentionPatch:
                 # if we have too many remove the exceeding
                 elif mask_downsample.shape[0] > batch_prompt:
                     mask_downsample = mask_downsample[:batch_prompt, :, :]
-                
+
                 # repeat the masks
                 mask_downsample = mask_downsample.repeat(len(cond_or_uncond), 1, 1)
                 mask_downsample = mask_downsample.view(mask_downsample.shape[0], -1, 1).repeat(1, 1, out.shape[2])
@@ -535,7 +535,7 @@ class IPAdapterModelLoader:
                 elif key.startswith("ip_adapter."):
                     st_model["ip_adapter"][key.replace("ip_adapter.", "")] = model[key]
             model = st_model
-                    
+
         if not "ip_adapter" in model.keys() or not model["ip_adapter"]:
             raise Exception("invalid IPAdapter model {}".format(ckpt_path))
 
@@ -577,7 +577,7 @@ class InsightFaceLoader:
                 local_path = os.path.join(model_root, local_file)
                 if not os.path.exists(local_path):
                     load_file_from_url(url, model_dir=model_root)
-        
+
         from insightface.utils import face_align
         global insightface_face_align
         insightface_face_align = face_align
@@ -692,7 +692,7 @@ class IPAdapterApply:
                         clip_embed_zeroed = clip_vision.encode_image(neg_image).penultimate_hidden_states
                     else:
                         clip_embed_zeroed = zeroed_hidden_states(clip_vision, image.shape[0])
-                    
+
                     # TODO: check noise to the uncods too
                     face_embed_zeroed = torch.zeros_like(face_embed)
                 else:
@@ -704,7 +704,7 @@ class IPAdapterApply:
 
                 clip_embed = clip_vision.encode_image(image)
                 neg_image = image_add_noise(image, noise) if noise > 0 else None
-                
+
                 if self.is_plus:
                     clip_embed = clip_embed.penultimate_hidden_states
                     if noise > 0:
@@ -732,7 +732,7 @@ class IPAdapterApply:
             is_faceid=self.is_faceid,
             is_instant_id=self.is_instant_id
         )
-        
+
         self.ipadapter.to(self.device, dtype=self.dtype)
 
         if self.is_instant_id:
@@ -848,7 +848,7 @@ def prepImage(image, interpolation="LANCZOS", crop_position="center", size=(224,
             x = 0
         elif "right" in crop_position:
             x = ow-crop_size
-        
+
         x2 = x+crop_size
         y2 = y+crop_size
 
@@ -863,10 +863,10 @@ def prepImage(image, interpolation="LANCZOS", crop_position="center", size=(224,
         imgs.append(TT.ToTensor()(img))
     output = torch.stack(imgs, dim=0)
     imgs = None # zelous GC
-    
+
     if sharpening > 0:
         output = contrast_adaptive_sharpening(output, sharpening)
-    
+
     if padding > 0:
         output = F.pad(output, (padding, padding, padding, padding), value=255, mode="constant")
 
@@ -954,7 +954,7 @@ class IPAdapterEncoder:
 
         image = image_1
         weight = [weight_1]*image_1.shape[0]
-        
+
         if image_2 is not None:
             if image_1.shape[1:] != image_2.shape[1:]:
                 image_2 = ldm_patched.modules.utils.common_upscale(image_2.movedim(-1,1), image.shape[2], image.shape[1], "bilinear", "center").movedim(1,-1)
@@ -970,10 +970,10 @@ class IPAdapterEncoder:
                 image_4 = ldm_patched.modules.utils.common_upscale(image_4.movedim(-1,1), image.shape[2], image.shape[1], "bilinear", "center").movedim(1,-1)
             image = torch.cat((image, image_4), dim=0)
             weight += [weight_4]*image_4.shape[0]
-        
+
         clip_embed = clip_vision.encode_image(image)
         neg_image = image_add_noise(image, noise) if noise > 0 else None
-        
+
         if ipadapter_plus:
             clip_embed = clip_embed.penultimate_hidden_states
             if noise > 0:
@@ -990,7 +990,7 @@ class IPAdapterEncoder:
         if any(e != 1.0 for e in weight):
             weight = torch.tensor(weight).unsqueeze(-1) if not ipadapter_plus else torch.tensor(weight).unsqueeze(-1).unsqueeze(-1)
             clip_embed = clip_embed * weight
-        
+
         output = torch.stack((clip_embed, clip_embed_zeroed))
 
         return( output, )
